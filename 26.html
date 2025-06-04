@@ -1,0 +1,24 @@
+401 function exportHTML() {
+402   if (!rows.length) return alert('請先上傳並解析 CSV');
+403   const clone = document.documentElement.cloneNode(true);
+404   clone.querySelector('#inputPane')?.remove();
+405   clone.querySelector('#htmlBtn')?.remove();
+406   const init = document.createElement('script');
+407   init.textContent = `rows = ${JSON.stringify(rows)};\n` +
+408     `yearInput.value = ${JSON.stringify(yearInput.value)};\n` +
+409     `stuInput.value = ${JSON.stringify(stuInput.value)};\n` +
+410     `teaInput.value = ${JSON.stringify(teaInput.value)};\n` +
+411     `cmtInput.value = ${JSON.stringify(cmtInput.value)};\n` +
+412     `setPh();\nbuildTables();\nbuildCharts();\nbuildSummary();\n` +
+413     `pages.forEach((p,i)=>p.style.display=i===0?'block':'none');\n` +
+414     `pageNow=0;prevBtn.disabled=true;nextBtn.disabled=false;document.querySelector('#cover').style.display='flex';`;
+415   clone.body.appendChild(init);
+416   const html = '<!DOCTYPE html>' + clone.outerHTML;
+417   const blob = new Blob([html], {type:'text/html'});
+418   const a = document.createElement('a');
+419   a.href = URL.createObjectURL(blob);
+420   a.download = `${stuInput.value || 'student'}_${yearInput.value}.html`;
+421   a.click();
+422   setTimeout(()=>URL.revokeObjectURL(a.href),500);
+423 }
+424 document.getElementById('htmlBtn')?.addEventListener('click', exportHTML);
