@@ -1,0 +1,253 @@
+<!DOCTYPE html><html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<title>慈濟中文學校｜電子成績單</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--main:#6e5a8c;--accent:#e7c4dd;--light:#f9f6fb;--bg:#ffffff;
+--danger:#e17c93;--line24:#f1cfe0;--line25:#b8a6d9;}
+*{box-sizing:border-box;}
+body{font-family:"Noto Sans TC",Arial,sans-serif;margin:0;background:var(--light);color:#3d3750;}
+h1{font-size:1.5rem;text-align:center;background:var(--main);color:#fff;padding:20px 0 15px;letter-spacing:3px;margin:0;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+h2{color:var(--main);margin:22px 0 12px;font-size:1.22rem;letter-spacing:.5px;}
+h3{font-size:1.07rem;color:var(--main);margin:20px 0 8px;}
+.container{padding:20px;max-width:1220px;margin:auto;}
+input,textarea,button{margin:6px;}input[type=file],button{background:var(--accent);border:none;color:#fff;padding:8px 18px;border-radius:7px;font-size:.99rem;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.08);transition:filter .2s;}
+input[type=file]:hover,button:hover{filter:brightness(.95);}
+input[type=text],textarea{padding:8px 10px;border:1.3px solid #cbbcd5;border-radius:7px;font-size:.97rem;background:#fff;}
+textarea{vertical-align:top;width:330px;height:70px;resize:vertical;}
+button:disabled{opacity:.55;cursor:not-allowed;}
+.page{display:none;}
+.page-header{background:linear-gradient(90deg,var(--accent),var(--main) 90%);color:#fff;padding:10px 28px 9px;border-radius:16px 16px 0 0;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;font-size:1.02rem;box-shadow:0 3px 8px rgba(0,0,0,.06);}
+.page-header b{font-weight:600;}.page-header .right{font-size:.94rem;}
+@media print{.container{max-width:100%;}body{background:#fff;}}
+table{width:100%;border-collapse:collapse;}
+table.dataTable thead th{background:var(--main);color:#fff;font-size:1.05rem;}
+table.dataTable tbody tr:nth-child(even){background:var(--light);}
+table.dataTable th,table.dataTable td{font-size:1.02rem;border-bottom:1px solid #e5e1ec;}
+canvas{width:100%!important;height:440px!important;margin:22px auto;display:block;}
+.star{position:absolute;width:12px;height:12px;background:var(--accent);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+.tip{font-size:.94rem;text-align:center;color:#666;margin-top:-6px;}
+.result-box{border-radius:14px;background:#fff;box-shadow:0 2px 12px rgba(185,172,198,.09);margin:28px 0 34px;padding:18px 28px 20px 20px;position:relative;border-left:8px solid var(--accent);}
+.result-box.strong{border-left-color:#92e6b6;}.result-box.weak{border-left-color:#ffcfa8;}
+.result-table{border-collapse:separate;border-spacing:0;width:100%;background:#faf8fc;border-radius:9px;overflow:hidden;margin-top:14px;margin-bottom:10px;}
+.result-table th{background:#ece3f3;color:#6e5a8c;font-size:1.04rem;font-weight:600;border-bottom:2px solid #e5dfee;padding:8px 12px;}
+.result-table td{background:#fff;color:#3d3750;border-bottom:1px solid #ece3f3;padding:8px 12px;}
+.result-table tr:last-child td{border-bottom:none;}
+.score-high{background:#f4fbf4!important;}.score-low{background:#fff8f3!important;}
+.summary-note{font-size:.95rem;color:#8f79a5;margin:6px 0;font-style:italic;}
+#cover{position:fixed;inset:0;background:#f4f1f8;display:none;align-items:center;justify-content:center;z-index:9999;}
+.envelope{position:relative;width:360px;height:240px;perspective:1000px;cursor:pointer;}
+.envelope .flap{position:absolute;top:0;left:0;width:100%;height:50%;background:var(--accent);transform-origin:top center;transition:transform .8s ease;box-shadow:0 3px 6px rgba(0,0,0,.15);}
+.envelope .body{position:absolute;top:50%;left:0;width:100%;height:50%;background:#fff;border:2px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px 8px;}
+.envelope .body h2{margin:0;font-size:1.12rem;color:var(--main);}
+.envelope .body p{margin:4px 0 0;font-size:.95rem;color:#555;}
+.envelope.open .flap{transform:rotateX(-180deg);}
+</style>
+</head>
+<body>
+<h1>慈濟中文學校</h1>
+<div class="container" id="inputPane" style="background: var(--bg); display: none;">
+  學年度 <input type="text" id="yearInput" value="2024-2025" style="width:96px">
+  學生 <input type="text" id="stuInput" placeholder="王小明">
+  教師 <input type="text" id="teaInput" placeholder="張老師"><br>
+  教師評語 <textarea id="cmtInput" placeholder="請輸入教師總評…"></textarea><br>
+  <input type="file" id="fileInput" accept=".csv">
+  <button id="uploadBtn">上傳並解析</button><br>
+</div>
+<div id="page-0" class="page" style="display: block;"><div class="container">
+  <div class="page-header"><span><b>學年度</b>：<span id="phYear0">2024-2025</span>　<b>學生</b>：<span id="phStu0">楊竹安</span></span>
+  <span class="right">第 1/4 頁</span></div>
+  <h2>成績表（上）</h2>
+  <div id="tbl1_wrapper" class="dataTables_wrapper no-footer"><div id="tbl1_filter" class="dataTables_filter"><label>搜尋:<input type="search" class="" placeholder="" aria-controls="tbl1"></label></div><table id="tbl1" class="display dataTable no-footer"><thead><tr><th class="sorting sorting_asc" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-sort="ascending" aria-label="範疇: activate to sort column descending" style="width: 0px;">範疇</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="Category: activate to sort column ascending" style="width: 0px;">Category</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="評量指標: activate to sort column ascending" style="width: 0px;">評量指標</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="Indicator: activate to sort column ascending" style="width: 0px;">Indicator</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="核心說明: activate to sort column ascending" style="width: 0px;">核心說明</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="Description: activate to sort column ascending" style="width: 0px;">Description</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="2024: activate to sort column ascending" style="width: 0px;">2024</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="2025: activate to sort column ascending" style="width: 0px;">2025</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="進步%: activate to sort column ascending" style="width: 0px;">進步%</th><th class="sorting" tabindex="0" aria-controls="tbl1" rowspan="1" colspan="1" aria-label="2026目標: activate to sort column ascending" style="width: 0px;">2026目標</th></tr></thead><tbody><tr class="odd"><td class="sorting_1">口語</td><td>Speaking</td><td>口語流利度</td><td>Speaking Fluency</td><td>說話連貫度、停頓時間、語速與節奏</td><td>Flow, pause length, speed, and rhythm of speech</td><td>9</td><td>9.5</td><td>5.6</td><td>Max</td></tr><tr class="even"><td class="sorting_1">口語</td><td>Speaking</td><td>發音與聲調</td><td>Pronunciation &amp; Tones</td><td>四聲、兒化、輕聲等準確度；易混聲母韻母辨識</td><td>Accuracy of four tones, retroflex/neutral tone; distinguish confusing initials/finals</td><td>8.5</td><td>9</td><td>5.9</td><td>9</td></tr><tr class="odd"><td class="sorting_1">口語</td><td>Speaking</td><td>會話互動</td><td>Interactive Conversation</td><td>能提問、應答、接續話題並使用禮貌用語</td><td>Ask, respond, sustain topic, use polite expressions</td><td>9</td><td>9.5</td><td>5.6</td><td>9</td></tr><tr class="even"><td class="sorting_1">寫作</td><td>Writing</td><td>字形筆順</td><td>Character Formation</td><td>筆畫正確、結構端正、書寫整潔度</td><td>Correct stroke order, balanced structure, neatness</td><td>9</td><td>9.5</td><td>5.6</td><td>9.5</td></tr><tr class="odd"><td class="sorting_1">寫作</td><td>Writing</td><td>句型運用</td><td>Sentence Patterns</td><td>正確使用並變化基本句式（把、被、連動、比較等）</td><td>Accurate and varied use of basic patterns (ba-construction, passive, serial verbs, comparisons)</td><td>7.5</td><td>8</td><td>6.7</td><td>8</td></tr><tr class="even"><td class="sorting_1">寫作</td><td>Writing</td><td>段落組織</td><td>Paragraph Organization</td><td>主題句、過渡詞、結尾呼應；篇章邏輯</td><td>Topic sentence, transitions, closure; logical flow</td><td>6.5</td><td>7</td><td>7.7</td><td>6</td></tr><tr class="odd"><td class="sorting_1">寫作</td><td>Writing</td><td>創意表達</td><td>Creative Expression</td><td>能在小作文加入感受、例子或修辭，展現個人風格</td><td>Add feelings, examples, rhetorical devices; show personal voice</td><td>6</td><td>6.5</td><td>8.3</td><td>7</td></tr><tr class="even"><td class="sorting_1">聽力</td><td>Listening</td><td>聽力理解</td><td>Listening Comprehension</td><td>能聽懂課堂指令、日常對話、素材（影片／故事）大意與細節</td><td>Understand classroom directions, everyday dialogue, and main ideas + details in audio/video or stories</td><td>9</td><td>9.5</td><td>5.6</td><td>9.5</td></tr><tr class="odd"><td class="sorting_1">聽力</td><td>Listening</td><td>關鍵訊息擷取</td><td>Key-Information Extraction</td><td>能抓住「人物、事件、時間、因果」等要點並筆記</td><td>Identify and note people, events, time, cause–effect, etc.</td><td>8.5</td><td>9</td><td>5.9</td><td>9</td></tr><tr class="even"><td class="sorting_1">詞彙‧語法</td><td>Vocabulary &amp; Grammar</td><td>詞彙量</td><td>Vocabulary Range</td><td>高頻詞掌握、多義詞運用、近義／反義辨析</td><td>Master high-frequency words, use polysemy, distinguish synonyms/antonyms</td><td>8</td><td>8.5</td><td>6.3</td><td>9</td></tr><tr class="odd"><td class="sorting_1">閱讀</td><td>Reading</td><td>閱讀理解</td><td>Reading Comprehension</td><td>能概括主旨、推論隱含信息、分辨事實與觀點</td><td>Summarize main idea, infer implicit info, distinguish fact vs. opinion</td><td>6</td><td>6.5</td><td>8.3</td><td>7</td></tr><tr class="even"><td class="sorting_1">閱讀</td><td>Reading</td><td>閱讀速度</td><td>Reading Speed</td><td>每分鐘識字／字數，隨年級逐步提高</td><td>Characters or words per minute; incremental by grade</td><td>6</td><td>6.5</td><td>8.3</td><td>7</td></tr></tbody></table></div>
+</div></div>
+<div id="page-1" class="page" style="display: none;"><div class="container">
+  <div class="page-header"><span><b>學年度</b>：<span id="phYear1">2024-2025</span>　<b>學生</b>：<span id="phStu1">楊竹安</span></span>
+  <span class="right">第 2/4 頁</span></div>
+  <h2>成績表（下）</h2>
+  <div id="tbl2_wrapper" class="dataTables_wrapper no-footer"><div id="tbl2_filter" class="dataTables_filter"><label>搜尋:<input type="search" class="" placeholder="" aria-controls="tbl2"></label></div><table id="tbl2" class="display dataTable no-footer"><thead><tr><th class="sorting sorting_asc" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-sort="ascending" aria-label="範疇: activate to sort column descending" style="width: 0px;">範疇</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="Category: activate to sort column ascending" style="width: 0px;">Category</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="評量指標: activate to sort column ascending" style="width: 0px;">評量指標</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="Indicator: activate to sort column ascending" style="width: 0px;">Indicator</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="核心說明: activate to sort column ascending" style="width: 0px;">核心說明</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="Description: activate to sort column ascending" style="width: 0px;">Description</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="2024: activate to sort column ascending" style="width: 0px;">2024</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="2025: activate to sort column ascending" style="width: 0px;">2025</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="進步%: activate to sort column ascending" style="width: 0px;">進步%</th><th class="sorting" tabindex="0" aria-controls="tbl2" rowspan="1" colspan="1" aria-label="2026目標: activate to sort column ascending" style="width: 0px;">2026目標</th></tr></thead><tbody><tr class="odd"><td class="sorting_1">出席與紀律</td><td>Attendance &amp; Conduct</td><td>出席率</td><td>Attendance Rate</td><td>到課準時、請假事前告知</td><td>Punctual attendance; prior notice for absences</td><td>9</td><td>9</td><td>0</td><td>9.5</td></tr><tr class="even"><td class="sorting_1">出席與紀律</td><td>Attendance &amp; Conduct</td><td>課堂參與</td><td>Class Participation</td><td>舉手發言、課堂練習投入度、專注力</td><td>Raises hand, engages in tasks, stays focused</td><td>9</td><td>9.5</td><td>5.6</td><td>Max</td></tr><tr class="odd"><td class="sorting_1">學習態度</td><td>Learning Attitude</td><td>作業完成度</td><td>Homework Completion</td><td>準時繳交、正確率、自我修訂意願</td><td>On-time submission, accuracy, willingness to self-edit</td><td>10</td><td>10</td><td>0</td><td>Max</td></tr><tr class="even"><td class="sorting_1">學習態度</td><td>Learning Attitude</td><td>自主學習</td><td>Self-directed Learning</td><td>主動預習複習、使用中文 App 或閱讀課外書</td><td>Proactive preview/review; uses Chinese apps or extra reading</td><td>9</td><td>9.5</td><td>5.6</td><td>Max</td></tr><tr class="odd"><td class="sorting_1">學習態度</td><td>Learning Attitude</td><td>家庭參與</td><td>Family Involvement</td><td>家長共讀、家庭中文對話頻率、家庭作業支持</td><td>Parent-child reading, home Chinese conversation, homework support</td><td>10</td><td>10</td><td>0</td><td>Max</td></tr><tr class="even"><td class="sorting_1">文化與品德</td><td>Culture &amp; Character</td><td>中華文化知識</td><td>Chinese-Culture Knowledge</td><td>節慶、歷史人物、地理常識與相關禮俗</td><td>Festivals, historical figures, geography, customs</td><td>8</td><td>8.5</td><td>6.3</td><td>9</td></tr><tr class="odd"><td class="sorting_1">文化與品德</td><td>Culture &amp; Character</td><td>文化參與度</td><td>Cultural Participation</td><td>積極投入節慶活動、社團或課外文化專案</td><td>Active in festivals, clubs, or cultural projects</td><td>10</td><td>10</td><td>0</td><td>Max</td></tr><tr class="even"><td class="sorting_1">文化與品德</td><td>Culture &amp; Character</td><td>品德與合作</td><td>Character &amp; Teamwork</td><td>尊重同儕、團隊協作、服務學習參與</td><td>Respect peers, cooperate in teams, join service-learning</td><td>10</td><td>10</td><td>0</td><td>Max</td></tr><tr class="odd"><td class="sorting_1">評量延伸</td><td>Extended Assessment</td><td>課外補充參與</td><td>Enrichment Participation</td><td>參加夏令營、中文比賽、社區服務等</td><td>Joins camps, contests, community service</td><td>10</td><td>10</td><td>0</td><td>Max</td></tr><tr class="even"><td class="sorting_1">評量延伸</td><td>Extended Assessment</td><td>評量反思</td><td>Assessment Reflection</td><td>學生能自評優勢與改進點，設定下一步學習目標</td><td>Self-evaluate strengths/needs; set next-step goals</td><td>8</td><td>9</td><td>0</td><td>9.5</td></tr><tr class="odd"><td class="sorting_1">詞彙‧語法</td><td>Vocabulary &amp; Grammar</td><td>語法準確度</td><td>Grammatical Accuracy</td><td>時態、量詞、介詞、助詞使用恰當</td><td>Correct use of aspect/tense, classifiers, prepositions, particles</td><td>8.5</td><td>9</td><td>5.9</td><td>9.5</td></tr></tbody></table></div>
+</div></div>
+<div id="page-2" class="page" style="display: none;"><div class="container">
+  <div class="page-header"><span><b>學年度</b>：<span id="phYear2">2024-2025</span>　<b>學生</b>：<span id="phStu2">楊竹安</span></span>
+  <span class="right">第 3/4 頁</span></div>
+  <h2>2025 分數圖表分析</h2>
+  <canvas id="cvBar" height="1180" style="display: block; box-sizing: border-box; height: 590px; width: 1180px;" width="2360"></canvas>
+  <canvas id="cvLine" height="1180" style="display: block; box-sizing: border-box; height: 590px; width: 1180px;" width="2360"></canvas>
+  <p class="tip">點擊任意柱子或 X 軸指標文字，才動畫升起；Max 目標動畫變粉且灑星星</p>
+  <canvas id="cvRadar" height="2360" style="display: block; box-sizing: border-box; height: 1180px; width: 1180px;" width="2360"></canvas>
+</div></div>
+<div id="page-3" class="page" style="display: none;"><div class="container">
+  <div class="page-header"><span><b>學年度</b>：<span id="phYear3">2024-2025</span>　<b>學生</b>：<span id="phStu3">楊竹安</span></span>
+  <span class="right">第 4/4 頁</span></div>
+  <h2>Summary &amp; Analysis</h2>
+  <div id="strongBox" class="result-box strong"><div class="summary-note">分數達 9–10 分為精熟等級，請持續發揮強項，成為班級楷模！</div><b style="font-size:1.1rem">優勢亮點</b><table class="result-table"><tbody><tr><th>指標</th><th>2025分數</th></tr><tr class="score-high"><td>聽力理解</td><td>9.5</td></tr><tr class="score-high"><td>關鍵訊息擷取</td><td>9</td></tr><tr class="score-high"><td>口語流利度</td><td>9.5</td></tr><tr class="score-high"><td>發音與聲調</td><td>9</td></tr><tr class="score-high"><td>會話互動</td><td>9.5</td></tr><tr class="score-high"><td>字形筆順</td><td>9.5</td></tr><tr class="score-high"><td>語法準確度</td><td>9</td></tr><tr class="score-high"><td>文化參與度</td><td>10</td></tr><tr class="score-high"><td>品德與合作</td><td>10</td></tr><tr class="score-high"><td>作業完成度</td><td>10</td></tr><tr class="score-high"><td>自主學習</td><td>9.5</td></tr><tr class="score-high"><td>家庭參與</td><td>10</td></tr><tr class="score-high"><td>出席率</td><td>9</td></tr><tr class="score-high"><td>課堂參與</td><td>9.5</td></tr><tr class="score-high"><td>課外補充參與</td><td>10</td></tr><tr class="score-high"><td>評量反思</td><td>9</td></tr></tbody></table></div>
+  <div id="weakBox" class="result-box weak"><div class="summary-note">分數低於 9 表示該指標仍有進步空間，請在新學年積極加強練習。</div><b style="font-size:1.1rem">需努力 (分數 &lt; 9)</b><table class="result-table"><tbody><tr><th>指標</th><th>2025分數</th></tr><tr class="score-low"><td>閱讀理解</td><td>6.5</td></tr><tr class="score-low"><td>閱讀速度</td><td>6.5</td></tr><tr class="score-low"><td>句型運用</td><td>8</td></tr><tr class="score-low"><td>段落組織</td><td>7</td></tr><tr class="score-low"><td>創意表達</td><td>6.5</td></tr><tr class="score-low"><td>詞彙量</td><td>8.5</td></tr><tr class="score-low"><td>中華文化知識</td><td>8.5</td></tr></tbody></table></div>
+  <h3>教師講評</h3><p id="teacherCmt">很棒</p>
+</div></div>
+<div class="container" style="text-align:center">
+  <button id="prevBtn" disabled="">Prev</button>
+  <button id="nextBtn">Next</button>
+  <button id="pdfBtn">下載 PDF</button>
+  <button id="htmlBtn" style="">匯出 HTML</button>
+</div>
+<div id="cover" style="display: none;">
+  <div class="envelope open" id="env">
+    <div class="flap"></div>
+    <div class="body"><h2 id="coverTitle">楊竹安 2024-2025 成績單</h2><p>點擊以開啟成績單</p></div>
+  </div>
+</div>
+<script>
+const qs=s=>document.querySelector(s);
+/* 信封封面 */
+function updateCoverTitle(){
+  qs('#coverTitle').textContent=`${stuInput.value||'學生'} ${yearInput.value||''} 成績單`;
+}
+qs('#env').addEventListener('click',()=>{qs('#env').classList.add('open');setTimeout(()=>qs('#cover').style.display='none',800);});
+/* 全域變數 */
+let rows=[],labels=[],y24=[],y25=[],imp=[],isMax=[];
+let chLine,chBar,chRadar,pageNow=0;
+const pages=[...document.querySelectorAll('.page')];
+function setPh(){
+  for(let i=0;i<4;i++){qs('#phYear'+i).textContent=yearInput.value||'-';qs('#phStu'+i).textContent=stuInput.value||'-';}
+  updateCoverTitle();}
+fileInput.onchange=e=>uploadBtn.disabled=!e.target.files.length;
+uploadBtn.onclick=()=>{
+  const f=fileInput.files[0];if(!f)return alert('未選檔');setPh();
+  const fr=new FileReader();
+  fr.onload=ev=>{
+    try{rows=parseCSV(ev.target.result);buildTables();buildCharts();buildSummary();
+      pages.forEach((p,i)=>p.style.display=i===0?'block':'none');pageNow=0;prevBtn.disabled=true;nextBtn.disabled=false;
+      [pdfBtn,htmlBtn].forEach(b=>{b.disabled=false;b.style.display='';});
+      qs('#cover').style.display='flex';qs('#inputPane').style.display='none';}
+    catch(err){alert(err);}
+  };fr.readAsText(f,'utf-8');
+};
+function parseCSV(txt){
+  const lines=txt.trim().split(/\r?\n/).map(l=>l.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.replace(/^"|"$/g,'').trim()));
+  const head=lines[0].map(h=>h.replace(/\s/g,'').toLowerCase()),id=k=>head.indexOf(k);
+  const need=['評量指標(cn)','indicator(en)','2024score','2025score','improvement%','2026target','範疇(cn)','category(en)','核心說明(cn)','description(en)'];
+  if(need.some(k=>id(k)<0))throw'CSV 標題缺欄位';
+  let dom='',cat='';
+  return lines.slice(1).filter(r=>r.length).map(r=>{
+    if(r[id('範疇(cn)')])dom=r[id('範疇(cn)')];
+    if(r[id('category(en)')])cat=r[id('category(en)')];
+    return[dom,cat,r[id('評量指標(cn)')],r[id('indicator(en)')],r[id('核心說明(cn)')],r[id('description(en)')],+r[id('2024score')]||0,+r[id('2025score')]||0,parseFloat(String(r[id('improvement%')]).replace(/[▲%﹪\s]/g,''))||0,r[id('2026target')]];
+  });
+}
+/* 建表 */
+function buildTables(){
+  const half=Math.ceil(rows.length/2);render('#tbl1',rows.slice(0,half));render('#tbl2',rows.slice(half));
+  function render(sel,data){
+    const $tbl=$(sel),tbody=$tbl.find('tbody')[0];tbody.innerHTML='';
+    data.forEach(r=>{
+      const tr=document.createElement('tr');
+      r.forEach(c=>{const td=document.createElement('td');td.textContent=c;tr.appendChild(td);});
+      tbody.appendChild(tr);
+    });
+    if($.fn.DataTable.isDataTable(sel))$tbl.DataTable().destroy();
+    $tbl.DataTable({paging:false,searching:true,info:false,language:{search:'搜尋:'}});
+  }
+}
+/* 圖表 */
+function buildCharts(){
+  labels=rows.map(r=>r[2]);y24=rows.map(r=>r[6]);y25=rows.map(r=>r[7]);imp=rows.map(r=>r[8]);isMax=rows.map(r=>String(r[9]).toLowerCase()==='max');
+  [chLine,chBar,chRadar].forEach(c=>c&&c.destroy());
+  const barData=Array(labels.length).fill(0),barColors=labels.map(()=>"var(--accent)"),barBorders=labels.map(()=>"var(--main)");
+  chBar=new Chart(qs('#cvBar'),{type:'bar',data:{labels,datasets:[{label:'2025 Score',data:barData.slice(),backgroundColor:barColors.slice(),borderColor:barBorders.slice(),borderWidth:2}]},
+  options:{animation:{duration:0},plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:10}}}});
+  qs('#cvBar').onclick=e=>{
+    let mouseX=e.offsetX,idx=0,minDist=1e9;
+    chBar.scales.x.ticks.forEach((_,i)=>{const px=chBar.scales.x.getPixelForValue(i),d=Math.abs(mouseX-px);if(d<minDist){minDist=d;idx=i;}});
+    if(idx<0||idx>=y25.length)return;
+    chBar.data.datasets[0].data[idx]=0;chBar.update();
+    setTimeout(()=>{
+      chBar.data.datasets[0].data[idx]=y25[idx];
+      if(isMax[idx]){chBar.data.datasets[0].backgroundColor[idx]="var(--danger)";chBar.data.datasets[0].borderColor[idx]="#c55e78";chBar.update();star(e.pageX,e.pageY);}
+      else{chBar.data.datasets[0].backgroundColor[idx]="var(--accent)";chBar.data.datasets[0].borderColor[idx]="var(--main)";chBar.update();}
+    },60);
+  };
+  chLine=new Chart(qs('#cvLine'),{type:'line',data:{labels,datasets:[{label:'2024',data:y24,borderColor:'var(--line24)',borderWidth:2,fill:false,tension:.35},{label:'2025',data:y25,borderColor:'var(--line25)',borderWidth:2,fill:false,tension:.35}]},
+  options:{animation:{duration:1500},plugins:{legend:{labels:{boxWidth:14}}},responsive:true}});
+  const byDom={};rows.forEach(r=>{if(!byDom[r[0]])byDom[r[0]]=[];byDom[r[0]].push(r[7]);});
+  const domLabels=Object.keys(byDom),domAvg=domLabels.map(k=>(byDom[k].reduce((a,b)=>a+b)/byDom[k].length).toFixed(2));
+  chRadar=new Chart(qs('#cvRadar'),{type:'radar',data:{labels:domLabels,datasets:[{label:'2025 平均',data:domAvg,backgroundColor:'rgba(232,196,221,.35)',borderColor:'var(--line25)',borderWidth:2}]},
+  options:{scales:{r:{beginAtZero:true,max:10,ticks:{stepSize:2}}}}});
+}
+/* Summary */
+function buildSummary(){
+  qs('#teacherCmt').textContent=cmtInput.value.trim()||'(無)';
+  let strong=[],weak=[];y25.forEach((v,i)=>{const o={指標:labels[i],分數:v};(v>=9?strong:weak).push(o);});
+  qs('#strongBox').innerHTML=`<div class="summary-note">分數達 9–10 分為精熟等級，請持續發揮強項，成為班級楷模！</div>`+
+  (strong.length?`<b style="font-size:1.1rem">優勢亮點</b><table class="result-table"><tr><th>指標</th><th>2025分數</th></tr>${strong.map(r=>`<tr class="score-high"><td>${r.指標}</td><td>${r.分數}</td></tr>`).join('')}</table>`:'<b>無特別突出項目。</b>');
+  qs('#weakBox').innerHTML=`<div class="summary-note">分數低於 9 表示該指標仍有進步空間，請在新學年積極加強練習。</div>`+
+  (weak.length?`<b style="font-size:1.1rem">需努力 (分數 &lt; 9)</b><table class="result-table"><tr><th>指標</th><th>2025分數</th></tr>${weak.map(r=>`<tr class="score-low"><td>${r.指標}</td><td>${r.分數}</td></tr>`).join('')}</table>`:'<b>未發現明顯短板。</b>');
+}
+/* 星星動畫 */
+function star(x,y){
+  for(let i=0;i<12;i++){
+    const s=document.createElement('div');s.className='star';document.body.appendChild(s);
+    s.style.left=x+'px';s.style.top=y+'px';
+    const a=Math.random()*6.28,d=40+Math.random()*60;
+    s.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`,opacity:0}],{duration:900});
+    setTimeout(()=>s.remove(),950);
+  }
+}
+/* 導覽 */
+prevBtn.onclick=()=>nav(pageNow-1);nextBtn.onclick=()=>nav(pageNow+1);
+function nav(n){
+  if(n<0||n>=pages.length)return;setPh();
+  pages.forEach((p,i)=>p.style.display=i===n?'block':'none');
+  pageNow=n;prevBtn.disabled=n===0;nextBtn.disabled=n===pages.length-1;
+  if(n===2)[chLine,chBar,chRadar].forEach(c=>{c.resize();c.update();});
+}
+/* 下載 PDF */
+async function makePDF(){
+  const{jsPDF}=window.jspdf,pdf=new jsPDF({orientation:'portrait',unit:'px',format:'a4'}),mainRgb=[110,90,140],margin=20;
+  for(let i=0;i<pages.length;i++){
+    nav(i);
+    const cnv=await html2canvas(pages[i],{scale:2,useCORS:true});
+    const w=pdf.internal.pageSize.getWidth(),scaledW=w-margin*2,h=cnv.height*scaledW/cnv.width;
+    if(i)pdf.addPage();
+    pdf.setFillColor(...mainRgb);pdf.rect(0,0,w,30,'F');
+    pdf.setTextColor(255,255,255);pdf.setFontSize(14);
+    pdf.text(`${yearInput.value} 成績單 — ${stuInput.value}`,margin,20);
+    pdf.text(`Page ${i+1} of ${pages.length}`,w-margin-60,20);
+    pdf.addImage(cnv,'PNG',margin,40,scaledW,h);
+  }nav(0);return pdf;
+}
+pdfBtn.onclick=()=>makePDF().then(p=>p.save('成績單.pdf'));
+/* ✅ 改良 exportHTML：隱藏老師端並下載 */
+function exportHTML(){
+  if(!rows.length)return alert('請先上傳並解析 CSV');
+  const clone=document.documentElement.cloneNode(true);
+  const ip=clone.querySelector('#inputPane');if(ip)ip.style.display='none';
+  ['prevBtn','nextBtn','pdfBtn','htmlBtn'].forEach(id=>{
+    clone.querySelector('#'+id)?.remove();   /* ← 修正部分 */
+  });
+  const init=document.createElement('script');
+  init.textContent=
+    `rows=${JSON.stringify(rows)};\n`+
+    `yearInput.value=${JSON.stringify(yearInput.value)};\n`+
+    `stuInput.value=${JSON.stringify(stuInput.value)};\n`+
+    `teaInput.value=${JSON.stringify(teaInput.value)};\n`+
+    `cmtInput.value=${JSON.stringify(cmtInput.value)};\n`+
+    `setPh();buildTables();buildCharts();buildSummary();\n`+
+    `pages.forEach((p,i)=>p.style.display=i===0?'block':'none');\n`+
+    `pageNow=0;\n`+
+    `document.querySelector('#cover').style.display='flex';`;
+  clone.body.appendChild(init);
+  const html='<!DOCTYPE html>'+clone.outerHTML,blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`${stuInput.value||'student'}_${yearInput.value}.html`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+document.getElementById('htmlBtn')?.addEventListener('click',exportHTML);
+</script>
+
+
+</body></html>
